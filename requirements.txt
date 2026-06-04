@@ -2,3 +2,4 @@ python-telegram-bot==13.10
 python-dotenv==1.2.*
 requests==2.32.*
 setuptools<81
+google-cloud-dialogflow==2.47.*

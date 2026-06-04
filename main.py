@@ -1,30 +1,38 @@
 import os
 
 from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater
+from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+from detect_intent import detect_intent
 
 
-def start(update: Update, context: CallbackContext) -> None:
+def say_hi(update, context):
     update.message.reply_text("Здравствуйте")
 
 
-def echo(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text(update.message.text)
+def reply_from_dialogflow(update, context):
+    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
+    user_text = update.message.text
+    session_id = str(update.effective_user.id)
+
+    answer = detect_intent(project_id, session_id, user_text, "ru")
+    update.message.reply_text(answer.fulfillment_text or "Я не знаю, что ответить")
 
 
-def main() -> None:
+def main():
     load_dotenv()
-    tg_token = os.getenv("TG_TOKEN")
+    token = os.getenv("TG_TOKEN")
+    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
 
-    if not tg_token:
-        raise RuntimeError("Переменная TG_TOKEN не найдена в .env")
+    if not token:
+        raise RuntimeError("Добавьте TG_TOKEN в .env")
+    if not project_id:
+        raise RuntimeError("Добавьте DIALOGFLOW_PROJECT_ID в .env")
 
-    updater = Updater(token=tg_token, use_context=True)
+    updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
 
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(MessageHandler(Filters.text, echo))
+    dispatcher.add_handler(CommandHandler("start", say_hi))
+    dispatcher.add_handler(MessageHandler(Filters.text, reply_from_dialogflow))
 
     updater.start_polling()
     updater.idle()
