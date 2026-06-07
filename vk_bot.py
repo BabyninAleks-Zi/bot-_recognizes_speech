@@ -40,6 +40,10 @@ def reply_from_dialogflow(event, vk):
         send_message(vk, message["peer_id"], "DialogFlow не ответил. Посмотрите ошибку в терминале.")
         return
 
+    if answer.intent.is_fallback:
+        print("DialogFlow не понял вопрос. Просьба ответить оператору.")
+        return
+
     send_message(vk, message["peer_id"], answer.fulfillment_text or "Я не знаю, что ответить")
 
 
