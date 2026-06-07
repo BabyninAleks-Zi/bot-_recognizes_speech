@@ -3,6 +3,7 @@ import random
 
 import vk_api
 from dotenv import load_dotenv
+from detect_intent import detect_intent
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.exceptions import ApiError
 
@@ -18,24 +19,42 @@ def print_message(event):
     print("Текст:", message["text"])
 
 
-def echo(event, vk):
-    message = event.object.message
+def send_message(vk, peer_id, text):
     vk.messages.send(
-        peer_id=message["peer_id"],
-        message=message["text"],
+        peer_id=peer_id,
+        message=text,
         random_id=random.randint(1, 1000000000),
     )
+
+
+def reply_from_dialogflow(event, vk):
+    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
+    message = event.object.message
+    user_text = message["text"]
+    session_id = str(message["from_id"])
+
+    try:
+        answer = detect_intent(project_id, session_id, user_text, "ru")
+    except Exception as error:
+        print(f"DialogFlow не ответил: {error}")
+        send_message(vk, message["peer_id"], "DialogFlow не ответил. Посмотрите ошибку в терминале.")
+        return
+
+    send_message(vk, message["peer_id"], answer.fulfillment_text or "Я не знаю, что ответить")
 
 
 def main():
     load_dotenv()
     token = os.getenv("VK_TOKEN")
     group_id = os.getenv("VK_GROUP_ID")
+    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
 
     if not token:
         raise RuntimeError("Добавьте VK_TOKEN в .env")
     if not group_id:
         raise RuntimeError("Добавьте VK_GROUP_ID в .env")
+    if not project_id:
+        raise RuntimeError("Добавьте DIALOGFLOW_PROJECT_ID в .env")
 
     vk_session = vk_api.VkApi(token=token)
     vk = vk_session.get_api()
@@ -48,7 +67,7 @@ def main():
         if event.type == VkBotEventType.MESSAGE_NEW:
             print_message(event)
             if not event.object.message["out"]:
-                echo(event, vk)
+                reply_from_dialogflow(event, vk)
 
 
 if __name__ == "__main__":
