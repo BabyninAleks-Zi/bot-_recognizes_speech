@@ -1,0 +1,63 @@
+import json
+import os
+import sys
+
+from dotenv import load_dotenv
+from google.cloud import dialogflow_v2 as dialogflow
+
+
+QUESTIONS_FILE = "questions.json"
+REQUEST_TIMEOUT = 60
+
+
+def create_intent(project_id, display_name, questions, answer):
+    intents_client = dialogflow.IntentsClient(transport="rest")
+    parent = dialogflow.AgentsClient.agent_path(project_id)
+
+    training_phrases = []
+    for question in questions:
+        part = dialogflow.Intent.TrainingPhrase.Part(text=question)
+        training_phrase = dialogflow.Intent.TrainingPhrase(parts=[part])
+        training_phrases.append(training_phrase)
+
+    text = dialogflow.Intent.Message.Text(text=[answer])
+    message = dialogflow.Intent.Message(text=text)
+
+    intent = dialogflow.Intent(
+        display_name=display_name,
+        training_phrases=training_phrases,
+        messages=[message],
+    )
+
+    response = intents_client.create_intent(
+        request={
+            "parent": parent,
+            "intent": intent,
+        },
+        retry=None,
+        timeout=REQUEST_TIMEOUT,
+    )
+    print(f"Создали intent: {response.display_name}")
+
+
+def main():
+    load_dotenv()
+    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
+
+    if not project_id:
+        sys.exit("Добавьте DIALOGFLOW_PROJECT_ID в .env")
+
+    with open(QUESTIONS_FILE, "r", encoding="utf-8") as file:
+        intents = json.load(file)
+
+    for display_name, intent_data in intents.items():
+        create_intent(
+            project_id,
+            display_name,
+            intent_data["questions"],
+            intent_data["answer"],
+        )
+
+
+if __name__ == "__main__":
+    main()

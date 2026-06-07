@@ -14,7 +14,13 @@ def reply_from_dialogflow(update, context):
     user_text = update.message.text
     session_id = str(update.effective_user.id)
 
-    answer = detect_intent(project_id, session_id, user_text, "ru")
+    try:
+        answer = detect_intent(project_id, session_id, user_text, "ru")
+    except Exception as error:
+        print(f"DialogFlow не ответил: {error}")
+        update.message.reply_text("DialogFlow не ответил. Посмотрите ошибку в терминале.")
+        return
+
     update.message.reply_text(answer.fulfillment_text or "Я не знаю, что ответить")
 
 
