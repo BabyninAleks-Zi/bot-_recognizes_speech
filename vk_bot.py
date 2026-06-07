@@ -1,4 +1,5 @@
 import os
+import random
 
 import vk_api
 from dotenv import load_dotenv
@@ -17,6 +18,15 @@ def print_message(event):
     print("Текст:", message["text"])
 
 
+def echo(event, vk):
+    message = event.object.message
+    vk.messages.send(
+        peer_id=message["peer_id"],
+        message=message["text"],
+        random_id=random.randint(1, 1000000000),
+    )
+
+
 def main():
     load_dotenv()
     token = os.getenv("VK_TOKEN")
@@ -28,6 +38,7 @@ def main():
         raise RuntimeError("Добавьте VK_GROUP_ID в .env")
 
     vk_session = vk_api.VkApi(token=token)
+    vk = vk_session.get_api()
     try:
         longpoll = VkBotLongPoll(vk_session, int(group_id))
     except ApiError as error:
@@ -36,6 +47,8 @@ def main():
     for event in longpoll.listen():
         if event.type == VkBotEventType.MESSAGE_NEW:
             print_message(event)
+            if not event.object.message["out"]:
+                echo(event, vk)
 
 
 if __name__ == "__main__":
