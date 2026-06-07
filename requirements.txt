@@ -3,3 +3,4 @@ python-dotenv==1.2.*
 requests==2.32.*
 setuptools<81
 google-cloud-dialogflow==2.47.*
+vk_api==11.10.*
