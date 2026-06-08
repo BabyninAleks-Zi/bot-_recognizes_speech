@@ -1,8 +1,13 @@
 import os
+import time
 
 from dotenv import load_dotenv
+from telegram.error import NetworkError, TimedOut
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 from utils.dialogflow_api import detect_intent
+
+
+RECONNECT_DELAY = 60
 
 
 def say_hi(update, context):
@@ -24,7 +29,7 @@ def reply_from_dialogflow(update, context):
     update.message.reply_text(answer.fulfillment_text or "Я не знаю, что ответить")
 
 
-def main():
+def run_bot():
     load_dotenv()
     token = os.getenv("TG_TOKEN")
     project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
@@ -42,6 +47,15 @@ def main():
 
     updater.start_polling()
     updater.idle()
+
+
+def main():
+    while True:
+        try:
+            run_bot()
+        except (NetworkError, TimedOut):
+            print(f"Telegram API недоступен. Повтор через {RECONNECT_DELAY} секунд.")
+            time.sleep(RECONNECT_DELAY)
 
 
 if __name__ == "__main__":
