@@ -3,7 +3,7 @@ import random
 
 import vk_api
 from dotenv import load_dotenv
-from detect_intent import detect_intent
+from utils.dialogflow_api import detect_intent
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.exceptions import ApiError
 

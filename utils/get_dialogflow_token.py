@@ -10,7 +10,7 @@ from google.auth.transport.requests import Request
 DIALOGFLOW_SCOPE = "https://www.googleapis.com/auth/dialogflow"
 
 
-def get_dialogflow_token() -> tuple[str, str | None]:
+def get_dialogflow_token():
     load_dotenv()
     credentials_file = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
@@ -32,7 +32,7 @@ def get_dialogflow_token() -> tuple[str, str | None]:
     return credentials.token, project_id
 
 
-def main() -> None:
+def main():
     try:
         token, project_id = get_dialogflow_token()
     except RuntimeError as error:
@@ -45,3 +45,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
-from detect_intent import detect_intent
+from utils.dialogflow_api import detect_intent
 
 
 def say_hi(update, context):
