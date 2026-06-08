@@ -4,6 +4,7 @@ import random
 import vk_api
 from dotenv import load_dotenv
 from utils.dialogflow_api import detect_intent
+from utils.telegram_notifications import format_exception, notify_admin
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 from vk_api.exceptions import ApiError
 
@@ -37,6 +38,7 @@ def reply_from_dialogflow(event, vk):
         answer = detect_intent(project_id, session_id, user_text, "ru")
     except Exception as error:
         print(f"DialogFlow не ответил: {error}")
+        notify_admin(format_exception("VK bot", error))
         send_message(vk, message["peer_id"], "DialogFlow не ответил. Посмотрите ошибку в терминале.")
         return
 
@@ -75,4 +77,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    load_dotenv()
+    try:
+        main()
+    except Exception as error:
+        notify_admin(format_exception("VK bot", error))
+        raise

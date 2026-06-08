@@ -96,6 +96,7 @@ python -m pip install -r requirements.txt
 
 ```env
 TG_TOKEN=your_telegram_bot_token
+TG_CHAT_ID=your_telegram_chat_id_for_error_notifications
 VK_TOKEN=your_vk_group_token
 VK_GROUP_ID=your_vk_group_id
 DIALOGFLOW_PROJECT_ID=your_google_cloud_project_id
@@ -109,6 +110,8 @@ credentials.json
 ```
 
 Не публикуйте `.env` и `credentials.json`.
+
+`TG_CHAT_ID` нужен для уведомлений об ошибках. Бот сможет писать в этот чат только если пользователь уже запускал его в Telegram.
 
 ## Настройка DialogFlow
 
@@ -182,6 +185,33 @@ python vk_bot.py
 - если DialogFlow нашёл подходящий intent, бот отвечает в VK;
 - если DialogFlow вернул fallback intent, бот молчит и ждёт ответа оператора.
 
+## Деплой и мониторинг
+
+На сервере удобно запускать ботов через `systemd`:
+
+```text
+bot-recognizes-speech-tg.service
+bot-recognizes-speech-vk.service
+```
+
+Оба сервиса должны быть включены в автозапуск и иметь `Restart=always`. Тогда после перезагрузки сервера или падения процесса бот поднимется снова.
+
+Проверка:
+
+```bash
+systemctl status bot-recognizes-speech-tg.service
+systemctl status bot-recognizes-speech-vk.service
+```
+
+Логи:
+
+```bash
+journalctl -u bot-recognizes-speech-tg.service -f
+journalctl -u bot-recognizes-speech-vk.service -f
+```
+
+Если бот упадёт с необработанной ошибкой или не сможет получить ответ от DialogFlow, он отправит traceback в Telegram-чат из `TG_CHAT_ID`. Токены Telegram в traceback скрываются перед отправкой.
+
 ## Получение DialogFlow OAuth-токена
 
 Этот скрипт необязателен для работы ботов. Он нужен только для проверки, что Google credentials настроены правильно:
@@ -191,4 +221,3 @@ python -m utils.get_dialogflow_token
 ```
 
 Токен временный. Не сохраняйте и не публикуйте его.
-

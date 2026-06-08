@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from telegram.error import NetworkError, TimedOut
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 from utils.dialogflow_api import detect_intent
+from utils.telegram_notifications import format_exception, notify_admin
 
 
 RECONNECT_DELAY = 60
@@ -23,10 +24,16 @@ def reply_from_dialogflow(update, context):
         answer = detect_intent(project_id, session_id, user_text, "ru")
     except Exception as error:
         print(f"DialogFlow не ответил: {error}")
+        notify_admin(format_exception("Telegram bot", error))
         update.message.reply_text("DialogFlow не ответил. Посмотрите ошибку в терминале.")
         return
 
     update.message.reply_text(answer.fulfillment_text or "Я не знаю, что ответить")
+
+
+def handle_error(update, context):
+    if context.error:
+        notify_admin(format_exception("Telegram bot", context.error))
 
 
 def run_bot():
@@ -44,9 +51,13 @@ def run_bot():
 
     dispatcher.add_handler(CommandHandler("start", say_hi))
     dispatcher.add_handler(MessageHandler(Filters.text, reply_from_dialogflow))
+    dispatcher.add_error_handler(handle_error)
 
-    updater.start_polling()
-    updater.idle()
+    try:
+        updater.start_polling()
+        updater.idle()
+    finally:
+        updater.stop()
 
 
 def main():
@@ -56,6 +67,9 @@ def main():
         except (NetworkError, TimedOut):
             print(f"Telegram API недоступен. Повтор через {RECONNECT_DELAY} секунд.")
             time.sleep(RECONNECT_DELAY)
+        except Exception as error:
+            notify_admin(format_exception("Telegram bot", error))
+            raise
 
 
 if __name__ == "__main__":
