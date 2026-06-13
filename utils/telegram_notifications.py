@@ -1,4 +1,3 @@
-import os
 import re
 import traceback
 
@@ -21,10 +20,7 @@ def format_exception(bot_name, error):
     return f"{bot_name} упал с ошибкой:\n\n{traceback_text}"
 
 
-def notify_admin(message):
-    token = os.getenv("TG_TOKEN")
-    chat_id = os.getenv("TG_CHAT_ID")
-
+def notify_admin(message, token, chat_id):
     if not token:
         print("Не отправили уведомление: добавьте TG_TOKEN в .env")
         return

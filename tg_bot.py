@@ -1,5 +1,6 @@
 import os
 import time
+from functools import partial
 
 from dotenv import load_dotenv
 from telegram.error import NetworkError, TimedOut
@@ -15,8 +16,7 @@ def say_hi(update, context):
     update.message.reply_text("Здравствуйте")
 
 
-def reply_from_dialogflow(update, context):
-    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
+def reply_from_dialogflow(update, context, project_id, notification_token, admin_chat_id):
     user_text = update.message.text
     session_id = str(update.effective_user.id)
 
@@ -24,34 +24,49 @@ def reply_from_dialogflow(update, context):
         answer = detect_intent(project_id, session_id, user_text, "ru")
     except Exception as error:
         print(f"DialogFlow не ответил: {error}")
-        notify_admin(format_exception("Telegram bot", error))
+        notify_admin(
+            format_exception("Telegram bot", error),
+            notification_token,
+            admin_chat_id,
+        )
         update.message.reply_text("DialogFlow не ответил. Посмотрите ошибку в терминале.")
         return
 
     update.message.reply_text(answer.fulfillment_text or "Я не знаю, что ответить")
 
 
-def handle_error(update, context):
+def handle_error(update, context, notification_token, admin_chat_id):
     if context.error:
-        notify_admin(format_exception("Telegram bot", context.error))
+        notify_admin(
+            format_exception("Telegram bot", context.error),
+            notification_token,
+            admin_chat_id,
+        )
 
 
-def run_bot():
-    load_dotenv()
-    token = os.getenv("TG_TOKEN")
-    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
-
-    if not token:
-        raise RuntimeError("Добавьте TG_TOKEN в .env")
-    if not project_id:
-        raise RuntimeError("Добавьте DIALOGFLOW_PROJECT_ID в .env")
-
+def run_bot(token, project_id, admin_chat_id):
     updater = Updater(token, use_context=True)
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler(CommandHandler("start", say_hi))
-    dispatcher.add_handler(MessageHandler(Filters.text, reply_from_dialogflow))
-    dispatcher.add_error_handler(handle_error)
+    dispatcher.add_handler(
+        MessageHandler(
+            Filters.text,
+            partial(
+                reply_from_dialogflow,
+                project_id=project_id,
+                notification_token=token,
+                admin_chat_id=admin_chat_id,
+            ),
+        )
+    )
+    dispatcher.add_error_handler(
+        partial(
+            handle_error,
+            notification_token=token,
+            admin_chat_id=admin_chat_id,
+        )
+    )
 
     try:
         updater.start_polling()
@@ -61,14 +76,26 @@ def run_bot():
 
 
 def main():
+    load_dotenv()
+    token = os.getenv("TG_TOKEN")
+    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
+    admin_chat_id = os.getenv("TG_CHAT_ID")
+
+    if not token:
+        raise RuntimeError("Добавьте TG_TOKEN в .env")
+    if not project_id:
+        raise RuntimeError("Добавьте DIALOGFLOW_PROJECT_ID в .env")
+    if not admin_chat_id:
+        raise RuntimeError("Добавьте TG_CHAT_ID в .env")
+
     while True:
         try:
-            run_bot()
+            run_bot(token, project_id, admin_chat_id)
         except (NetworkError, TimedOut):
             print(f"Telegram API недоступен. Повтор через {RECONNECT_DELAY} секунд.")
             time.sleep(RECONNECT_DELAY)
         except Exception as error:
-            notify_admin(format_exception("Telegram bot", error))
+            notify_admin(format_exception("Telegram bot", error), token, admin_chat_id)
             raise
 
 
