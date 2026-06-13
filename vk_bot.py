@@ -8,17 +8,6 @@ from utils.telegram_notifications import format_exception, notify_admin
 from vk_api.bot_longpoll import VkBotEventType, VkBotLongPoll
 
 
-def print_message(event):
-    message = event.object.message
-
-    print("Новое сообщение:")
-    if message["out"]:
-        print("От меня для: ", message["peer_id"])
-    else:
-        print("Для меня от: ", message["from_id"])
-    print("Текст:", message["text"])
-
-
 def send_message(vk, peer_id, text):
     vk.messages.send(
         peer_id=peer_id,
@@ -66,8 +55,10 @@ def main():
 
         for event in longpoll.listen():
             if event.type == VkBotEventType.MESSAGE_NEW:
-                print_message(event)
-                if not event.object.message["out"]:
+                message = event.object.message
+                direction = "От меня для" if message["out"] else "Для меня от"
+                print(f"Новое сообщение:\n{direction}: {message['peer_id']}\nТекст: {message['text']}")
+                if not message["out"]:
                     reply_from_dialogflow(
                         event,
                         vk,
