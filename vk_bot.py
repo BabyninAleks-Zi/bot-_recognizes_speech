@@ -19,14 +19,14 @@ def send_message(vk, peer_id, text):
 def reply_from_dialogflow(event, vk, project_id):
     message = event.object.message
     user_text = message["text"]
-    session_id = str(message["from_id"])
+    session_id = f"vk-{message['from_id']}"
     answer = detect_intent(project_id, session_id, user_text, "ru")
 
     if answer.intent.is_fallback:
-        print("DialogFlow не понял вопрос. Просьба ответить оператору.")
-        return
+        return False
 
     send_message(vk, message["peer_id"], answer.fulfillment_text or "Я не знаю, что ответить")
+    return True
 
 
 def main():
@@ -54,16 +54,23 @@ def main():
         longpoll = VkBotLongPoll(vk_session, int(group_id))
 
         for event in longpoll.listen():
-            if event.type == VkBotEventType.MESSAGE_NEW:
-                message = event.object.message
-                direction = "От меня для" if message["out"] else "Для меня от"
-                print(f"Новое сообщение:\n{direction}: {message['peer_id']}\nТекст: {message['text']}")
-                if not message["out"]:
-                    reply_from_dialogflow(
-                        event,
-                        vk,
-                        project_id,
-                    )
+            if event.type != VkBotEventType.MESSAGE_NEW:
+                continue
+
+            message = event.object.message
+            direction = "От меня для" if message["out"] else "Для меня от"
+            print(f"Новое сообщение:\n{direction}: {message['peer_id']}\nТекст: {message['text']}")
+
+            if message["out"]:
+                continue
+
+            has_answer = reply_from_dialogflow(
+                event,
+                vk,
+                project_id,
+            )
+            if not has_answer:
+                print("DialogFlow не понял вопрос. Просьба ответить оператору.")
 
     except Exception as error:
         try:

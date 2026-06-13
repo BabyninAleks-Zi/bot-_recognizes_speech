@@ -18,7 +18,7 @@ def say_hi(update, context):
 
 def reply_from_dialogflow(update, context, project_id):
     user_text = update.message.text
-    session_id = str(update.effective_user.id)
+    session_id = f"tg-{update.effective_user.id}"
     answer = detect_intent(project_id, session_id, user_text, "ru")
 
     update.message.reply_text(answer.fulfillment_text or "Я не знаю, что ответить")
