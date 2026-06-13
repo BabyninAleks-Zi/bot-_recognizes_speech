@@ -36,11 +36,14 @@ def reply_from_dialogflow(event, vk, project_id, notification_token, admin_chat_
         answer = detect_intent(project_id, session_id, user_text, "ru")
     except Exception as error:
         print(f"DialogFlow не ответил: {error}")
-        notify_admin(
-            format_exception("VK bot", error),
-            notification_token,
-            admin_chat_id,
-        )
+        try:
+            notify_admin(
+                format_exception("VK bot", error),
+                notification_token,
+                admin_chat_id,
+            )
+        except Exception:
+            pass
         send_message(vk, message["peer_id"], "DialogFlow не ответил. Посмотрите ошибку в терминале.")
         return
 
@@ -88,7 +91,10 @@ def main():
                     )
 
     except Exception as error:
-        notify_admin(format_exception("VK bot", error), notification_token, admin_chat_id)
+        try:
+            notify_admin(format_exception("VK bot", error), notification_token, admin_chat_id)
+        except Exception:
+            print("Не удалось отправить уведомление в Telegram.")
         raise
 
 

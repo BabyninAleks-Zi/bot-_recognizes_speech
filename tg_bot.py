@@ -24,11 +24,14 @@ def reply_from_dialogflow(update, context, project_id, notification_token, admin
         answer = detect_intent(project_id, session_id, user_text, "ru")
     except Exception as error:
         print(f"DialogFlow не ответил: {error}")
-        notify_admin(
-            format_exception("Telegram bot", error),
-            notification_token,
-            admin_chat_id,
-        )
+        try:
+            notify_admin(
+                format_exception("Telegram bot", error),
+                notification_token,
+                admin_chat_id,
+            )
+        except Exception:
+            pass
         update.message.reply_text("DialogFlow не ответил. Посмотрите ошибку в терминале.")
         return
 
@@ -37,11 +40,14 @@ def reply_from_dialogflow(update, context, project_id, notification_token, admin
 
 def handle_error(update, context, notification_token, admin_chat_id):
     if context.error:
-        notify_admin(
-            format_exception("Telegram bot", context.error),
-            notification_token,
-            admin_chat_id,
-        )
+        try:
+            notify_admin(
+                format_exception("Telegram bot", context.error),
+                notification_token,
+                admin_chat_id,
+            )
+        except Exception:
+            pass
 
 
 def run_bot(token, project_id, admin_chat_id):
@@ -95,7 +101,10 @@ def main():
             print(f"Telegram API недоступен. Повтор через {RECONNECT_DELAY} секунд.")
             time.sleep(RECONNECT_DELAY)
         except Exception as error:
-            notify_admin(format_exception("Telegram bot", error), token, admin_chat_id)
+            try:
+                notify_admin(format_exception("Telegram bot", error), token, admin_chat_id)
+            except Exception:
+                print("Не удалось отправить уведомление в Telegram.")
             raise
 
 

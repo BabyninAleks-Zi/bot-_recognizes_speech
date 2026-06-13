@@ -22,15 +22,9 @@ def format_exception(bot_name, error):
 
 def notify_admin(message, token, chat_id):
     if not token:
-        print("Не отправили уведомление: добавьте TG_TOKEN в .env")
-        return
+        raise RuntimeError("Добавьте TG_TOKEN в .env")
     if not chat_id:
-        print("Не отправили уведомление: добавьте TG_CHAT_ID в .env")
-        return
+        raise RuntimeError("Добавьте TG_CHAT_ID в .env")
 
-    try:
-        bot = Bot(token=token)
-        bot.send_message(chat_id=chat_id, text=message[:MAX_MESSAGE_LENGTH])
-    except Exception as error:
-        error_text = TELEGRAM_TOKEN_PATTERN.sub("bot<hidden>", str(error))
-        print(f"Не удалось отправить уведомление в Telegram: {error_text}")
+    bot = Bot(token=token)
+    bot.send_message(chat_id=chat_id, text=message[:MAX_MESSAGE_LENGTH])
