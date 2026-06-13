@@ -16,38 +16,21 @@ def say_hi(update, context):
     update.message.reply_text("Здравствуйте")
 
 
-def reply_from_dialogflow(update, context, project_id, notification_token, admin_chat_id):
+def reply_from_dialogflow(update, context, project_id):
     user_text = update.message.text
     session_id = str(update.effective_user.id)
-
-    try:
-        answer = detect_intent(project_id, session_id, user_text, "ru")
-    except Exception as error:
-        print(f"DialogFlow не ответил: {error}")
-        try:
-            notify_admin(
-                format_exception("Telegram bot", error),
-                notification_token,
-                admin_chat_id,
-            )
-        except Exception:
-            pass
-        update.message.reply_text("DialogFlow не ответил. Посмотрите ошибку в терминале.")
-        return
+    answer = detect_intent(project_id, session_id, user_text, "ru")
 
     update.message.reply_text(answer.fulfillment_text or "Я не знаю, что ответить")
 
 
 def handle_error(update, context, notification_token, admin_chat_id):
     if context.error:
-        try:
-            notify_admin(
-                format_exception("Telegram bot", context.error),
-                notification_token,
-                admin_chat_id,
-            )
-        except Exception:
-            pass
+        notify_admin(
+            format_exception("Telegram bot", context.error),
+            notification_token,
+            admin_chat_id,
+        )
 
 
 def run_bot(token, project_id, admin_chat_id):
@@ -61,8 +44,6 @@ def run_bot(token, project_id, admin_chat_id):
             partial(
                 reply_from_dialogflow,
                 project_id=project_id,
-                notification_token=token,
-                admin_chat_id=admin_chat_id,
             ),
         )
     )

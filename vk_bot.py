@@ -27,25 +27,11 @@ def send_message(vk, peer_id, text):
     )
 
 
-def reply_from_dialogflow(event, vk, project_id, notification_token, admin_chat_id):
+def reply_from_dialogflow(event, vk, project_id):
     message = event.object.message
     user_text = message["text"]
     session_id = str(message["from_id"])
-
-    try:
-        answer = detect_intent(project_id, session_id, user_text, "ru")
-    except Exception as error:
-        print(f"DialogFlow не ответил: {error}")
-        try:
-            notify_admin(
-                format_exception("VK bot", error),
-                notification_token,
-                admin_chat_id,
-            )
-        except Exception:
-            pass
-        send_message(vk, message["peer_id"], "DialogFlow не ответил. Посмотрите ошибку в терминале.")
-        return
+    answer = detect_intent(project_id, session_id, user_text, "ru")
 
     if answer.intent.is_fallback:
         print("DialogFlow не понял вопрос. Просьба ответить оператору.")
@@ -86,8 +72,6 @@ def main():
                         event,
                         vk,
                         project_id,
-                        notification_token,
-                        admin_chat_id,
                     )
 
     except Exception as error:
